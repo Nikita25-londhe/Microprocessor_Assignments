@@ -1,124 +1,141 @@
 %macro rw 3
-mov rdi,01
-mov rax,%1
-mov rsi,%2
-mov rdx,%3
+mov rax, %1
+mov rdi, 01
+mov rsi, %2
+mov rdx, %3
 syscall
 %endmacro
 
 section .data
-msg1 db "The processor in protected mode",10,13
-len1 equ $ - msg1
-msg2 db "The processor in real mode",10,13
-len2 equ $ - msg2
-colmsg db":"
-colen equ $ - colmsg
-msg3 db "The GDTR content is:"
-len3 equ $ - msg3
-msg4 db "The LDTR content is:"
-len4 equ $ - msg4
-msg5 db "The IDTR content is:"
-len5 equ $ - msg5
-msg6 db "The CR0 content is:"
-len6 equ $ - msg6
-msg7 db "The Task register content are:"
-len7 equ $ - msg7
-count db 04h
-newline db "",10,13
-newlen equ $ - newline
+rmsg db 10,13,"Processor is in Real Mode"
+lenrmsg equ $-rmsg 
 
-section .bss 
-resarr resb 4
-cro_word resw 1
-gdt resd 1
-    resw 1
-ldt resw 1
-idt resd 1
-    resw 1
-tr resw 1
+prmsg db 10,13 ,"Processor is in Protected Mode"
+lenprmsg equ $- prmsg
+
+ldtmsg db 10,13,"LDT Contents are : "
+lenldt equ $-ldtmsg 
+
+cr0msg db 10,13,"CR0 contents are:"
+lencr0 equ $-cr0msg
+
+gdtmsg db 10,13,"GDT Contents are : "
+lengdt equ $-gdtmsg 
+
+idtmsg db 10,13,"IDT Contents are : "
+lenidt equ $-idtmsg 
+
+trmsg db 10,13,"The Task register contents are:"
+lentr equ $- trmsg 
+
+cpumsg db 10,13,"The CPU ID is:"
+lencpu equ $- cpumsg
+
+nl db 0xA,0xD
+nl_len equ $-nl
+
+colon db " : "
+colonLen equ $-colon
+count db 4
+
+
+section .bss
+ldt_contents resb 02 
+cr0_contents resb 4
+gdt_contents resb 6
+idt_contents resb 6
+numarr resb 4
+tr_contents resb 2
+cpuid_contents resb 12
+
+
 
 section .text
 global _start
 _start:
+
+;Printing CRO contents 
+
 smsw eax
-mov [cro_word],eax
+mov dword[cr0_contents], eax
 bt eax,0
-jc pr
-rw 1,msg2,len2
-jmp exit
-pr:
-rw 1,msg1,len1
-
-;Printing GDTR Content (48bit //32bit base//16 bit limit)
-
-sgdt [gdt]
-rw 1,msg3,len3
-mov bx,[gdt+4]   ;Accssing last two digit out of 6 digits
-call htoa
-mov bx,[gdt+2]
-call htoa
-rw 1,colmsg,colen  ;Printing colon after reading base of 32 bit
-mov bx,[gdt]
-call htoa
-rw 1,newline,newlen
-
-;Printing LDTR Content(16bit)
-
-sldt [ldt]
-rw 1,msg4,len4
-mov bx,[ldt]
-call htoa
-rw 1,newline,newlen
-
-;printing IDTR content(48bit //32bit base//16 bit limit)
-sidt [idt]
-rw 1,msg5,len5
-mov bx,[idt+4]
-call htoa
-mov bx,[idt+2]
-call htoa
-rw 1,colmsg,colen
-mov bx,[idt]
-call htoa
-rw 1,newline,newlen
-
-;Print TR content(16bit)
-str [tr]
-rw 1,msg7,len7
-mov bx,[tr]
-call htoa
-rw 1,newline,newlen
-
-;Printing CR0 
-
-rw 1,msg6,len6
-mov bx,[cro_word+2]
-call htoa
-mov bx,[cro_word]
+jnc real
+rw 1,prmsg,lenprmsg
+rw 1,cr0msg,lencr0
+mov ax,word[cr0_contents+2]
+call htoa 
+mov ax,word[cr0_contents]
 call htoa
 
+;Printing LDT contents  //16 bits
+sldt ax
+mov word[ldt_contents],ax
+rw 1,ldtmsg,lenldt
+mov ax,word[ldt_contents]
+call htoa
 
+;Printing GDT contents 
+rw 1,gdtmsg,lengdt
+sgdt [gdt_contents]
+mov ax,[gdt_contents+4]
+call htoa
+mov ax,[gdt_contents+2]
+call htoa
+rw 1,colon,colonLen
+mov ax,[gdt_contents]
+call htoa 
 
-exit:
+;Printing IDT contents
+rw 1,idtmsg,lenidt
+sidt [idt_contents]
+mov ax,[idt_contents+4]
+call htoa
+mov ax,[idt_contents+2]
+call htoa
+rw 1,colon,colonLen
+mov ax,[idt_contents]
+call htoa 
+
+;Printing TR contents 
+rw 1,trmsg,lentr
+str [tr_contents]
+mov ax,word[tr_contents]
+call htoa
+
+;Printing CPU-ID 
+rw 1,cpumsg,lencpu
+xor eax,eax
+CPUID
+mov dword[cpuid_contents], ebx
+mov dword[cpuid_contents+4], edx
+mov dword[cpuid_contents+8], ecx
+rw 1,cpuid_contents,12
+
+jmp end
+real:
+rw  1,rmsg,lenrmsg
+
+end:
 mov rax,60
 mov rdi,0
 syscall
 
 htoa:
 mov byte[count],4
-mov rbp,resarr
-up:
-rol bx,04
+mov rbp,numarr
+next:
+rol ax,04
 mov bl,al
 and bl,0Fh
 cmp bl,09h
-jle next1
+jle skip
 add bl,7h
-next1:
+skip:
 add bl,30h
 mov [rbp],bl
 inc rbp
 dec byte[count]
-jnz up
-rw 1,resarr,4
+jnz next
+rw 1,numarr,4
 ret
+
