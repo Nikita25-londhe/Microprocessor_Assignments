@@ -1,0 +1,117 @@
+%macro rw 3
+mov rdi,01
+mov rax,%1
+mov rsi,%2
+mov rdx,%3
+syscall
+%endmacro
+
+section .data
+colon db " : "
+colonlen equ $ - colon
+newline db 10,13,""
+lennew equ $ - newline
+space db "  "
+lensp equ $ - space
+msg1 db 10,13,"The source array is :",10,13
+len1 equ $ - msg1
+msg2 db 10,13,"The destination array is :",10,13
+len2 equ $ - msg2
+arr db 10h,20h,30h,40h,50h
+darr db 00,00
+count db 05h
+ans db 0h
+temp dq 0h
+
+section .bss 
+count1 resb 1
+resarr resb 2
+numarr resb 16
+
+section .text
+global _start
+_start:
+
+;Printing Source array Adddress
+rw 1, msg1, len1     
+mov rsi,arr
+call disp_block
+        
+
+;copy to destination array
+mov rsi,arr+4
+mov rdi ,darr+1
+mov rcx,5
+
+std
+rep movsb
+
+;Printing Destination array
+rw 1,msg2,len2
+mov rsi,arr+2
+call disp_block
+
+mov rax,60
+mov rdi,0
+syscall
+
+htoa:
+mov al,byte[ans]
+mov byte[count1],2
+mov rbp,resarr
+up:
+rol al,04
+mov bl,al
+and bl,0Fh
+cmp bl,09h
+jle next1
+add bl,7h
+next1:
+add bl,30h
+mov [rbp],bl
+inc rbp
+dec byte[count1]
+jnz up
+rw 1,resarr,2
+rw 1,newline,lennew
+ret
+
+
+htoa1:
+mov rax,qword[temp]
+mov byte[count1],16
+mov rbp,numarr
+up1:
+rol rax,04
+mov bl,al
+and bl,0Fh
+cmp bl,09h
+jle next2
+add bl,7h
+next2:
+add bl,30h
+mov [rbp],bl
+inc rbp
+dec byte[count1]
+jnz up1
+rw 1,numarr,16
+rw 1,colon,colonlen
+ret
+
+disp_block:
+mov byte[count],5
+Step:
+mov qword[temp],rsi
+push rsi
+call htoa1
+pop rsi
+mov al, [rsi]  
+mov byte[ans],al
+push rsi          
+call htoa          
+pop rsi      
+inc rsi
+dec byte[count]
+jnz Step
+ret
+
