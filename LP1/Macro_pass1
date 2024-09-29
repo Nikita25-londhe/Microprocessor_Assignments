@@ -1,0 +1,171 @@
+#include<iostream>
+#include<vector>
+#include<fstream>
+#include <string>
+#include<sstream>
+#include<tuple>
+using namespace std;
+class Macro
+{
+	vector<tuple<string, int, int, int, int>>MNT;
+	vector<vector<string>>MDT;
+	vector<vector<string>>MyToken;
+	vector<tuple<string, string>>KPDT;
+	vector<vector<string>>PNTAB;
+	int MDTP = 0, KPDTP = 0;
+public:
+	Macro()
+	{
+		ifstream fin("macro_input.txt");
+		if (fin.fail())
+		{
+			cout << "\nError in opening file";
+			exit(1);
+		}
+		string buffer;
+		string word;
+		vector<string>token;
+		while (getline(fin, buffer))
+		{
+			stringstream ss(buffer);
+			while (ss >> word)
+			{
+				if (word != ",")
+				{
+					token.push_back(word);
+				}
+			}
+			MyToken.push_back(token);
+			token.clear();
+		}
+	}
+	void displayTokens()
+	{
+		for (int i = 0; i < MyToken.size(); i++)
+		{
+			cout << i << ":";
+			for (string str: MyToken[i])
+			{
+				cout << str << "\t";
+			}
+			cout << endl;
+		}
+	}
+	int deal(string token,int size)
+	{
+		vector<string>temp = PNTAB[size];
+		
+		auto it = find(temp.begin(), temp.end(), token);
+		if (it!=temp.end())
+		{
+			return (distance(temp.begin(), it)+1);
+		}
+		return -1;
+	}
+	int StoreDef(int i)
+	{
+		string name = MyToken[i][0];
+		int KDTP = KPDT.size();
+		int MDTP = MDT.size();
+		int kp = 0, pp = 0;
+		vector<string>tempPNTAB;
+		for (int j = 1; j < MyToken[i].size(); j++)
+		{
+			string curr = MyToken[i][j];
+			if (curr.find('=') != string::npos)
+			{
+				kp++;
+				int index = curr.find('=');
+				string value = curr.substr(index + 1);
+				string keyword = curr.substr(0,index);
+				KPDT.emplace_back(keyword, value);
+				tempPNTAB.push_back(keyword+",");
+			}
+			else
+			{
+				int s = MyToken[i][j].length();
+				tempPNTAB.push_back(MyToken[i][j].substr(0,s-1));
+			}
+		}
+		PNTAB.push_back(tempPNTAB);
+		pp = tempPNTAB.size() - kp;
+		int j;
+		for (j = i + 1; j < MyToken.size() && MyToken[j][0]!="MEND"; j++)
+		{
+			vector<string>v1;
+			for (string temp : MyToken[j])
+			{
+				int index = deal(temp, PNTAB.size() - 1);
+				if (index != -1)
+				{
+					v1.push_back("(p," + to_string(index) + ")");
+				}
+				else
+				{
+					v1.push_back(temp);
+				}
+				
+			}
+			MDT.push_back(v1);
+		}
+		MDT.push_back({ "MEND" });
+		MNT.emplace_back(name, pp, kp, MDTP, KPDTP);
+		cout <<"\nj="<< j;
+		return j;
+	}
+	void pass1()
+	{
+		for (int i = 0; i < MyToken.size(); i++)
+		{
+			vector<string>curr = MyToken[i];
+			if (find(curr.begin(), curr.end(), "MACRO") != curr.end())
+			{
+				i = StoreDef(i + 1);
+			}
+		}
+	}
+	void displayMNT()
+	{
+		cout << "\nDisplaying MNT";
+
+		for (tuple<string, int, int, int, int>temp : MNT)
+		{
+			cout <<"\n" << get<0>(temp) << "\t" << get<1>(temp) << "\t" << get<2>(temp) << "\t" << get<3>(temp) << "\t" << get<4>(temp);
+		}
+		cout << endl;
+		cout << "\n" << MDT.size();
+		for (int i = 0; i < MDT.size(); i++)
+		{
+			cout << "Line " << i<< ": ";
+			for (string word : MDT[i])
+			{
+				cout << word << " ";
+			}
+			cout << endl;
+		}
+		cout << "-------------------------\n";
+		cout << "\nDisplaying PNTAB" << endl;
+		for (int i = 0; i < PNTAB.size(); i++)
+		{
+			for (string temp : PNTAB[i])
+			{
+				cout << temp << " ";
+			}
+			cout << endl;
+		}
+		cout << "\nDisplaying KPDT:";
+		for (tuple<string, string>temp : KPDT)
+		{
+			cout << "\n"<<get<0>(temp) << " " << get<1>(temp);
+		}
+		cout << endl;
+	}
+};
+int main()
+{
+	Macro m1;
+	m1.displayTokens();
+	m1.pass1();
+	m1.displayMNT();
+	return 0;
+}
