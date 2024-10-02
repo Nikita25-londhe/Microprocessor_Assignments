@@ -1,0 +1,140 @@
+// LRU_stack.cpp : This file contains the 'main' function. Program execution begins and ends there.
+/*This is implementation of Least recently used page replacement algorithm
+Approach is on top there is always most recently used page and on bottom least recently used page hence when os wants replace page it will replace
+with LRU page hence no of page faults can be reduced 
+why use DLL?->Wants to remove middle pages 
+*/
+
+#include <iostream>
+using namespace std;
+class Node
+{
+public:
+    int data;
+    Node* next, * prev;
+    Node(int a)
+    {
+        data = a;
+        next = prev = NULL;
+    }
+};
+class Page_Table
+{
+    Node* top;
+    int size;
+    int counter;
+public:
+    Page_Table(int a)
+    {
+        size = a;
+        top = NULL;
+        counter = 0;
+    }
+    bool full()
+    {
+        return count_frames()==size;
+    }
+    int count_frames()
+    {
+        Node* p = top;
+        int count = 0;
+        while (p!= NULL)
+        {
+            count++;
+            p = p->next;
+        }
+        return count;
+    }
+    Node* found(int page_no)
+    {
+        Node* p = top;
+        while (p!=NULL && p->data != page_no)
+        {
+            p = p->next;
+        }
+        return p;
+    }
+    int count_faults(string str)
+    {
+        bool isFull;
+        for (int i = 0; i < str.length(); i++)
+        {
+           isFull= full();
+            cout << "\ncount of frames:" << count_frames();
+            if(!isFull)
+            {
+                Node* p = new Node(str[i] - '0');
+                if (top == NULL)
+                {
+                    top = p;
+                }
+                else
+                {
+                    p->next = top;
+                    top->prev = p;
+                    top = p;
+                }
+            }
+            else if (isFull)
+            {
+                Node* T = found(str[i] - '0');
+                if (T == NULL)
+                {
+                    Node* p = top;
+                    while (p->next != NULL)
+                    {
+                        p = p->next;
+                    }
+              
+                    p->prev->next = NULL;
+                    delete p;
+                    p = new Node(str[i] - '0');
+                    p->next = top;
+                    top->prev = p;
+                    top = p;
+                    counter++;
+                }
+                else if (T == top)
+                {
+                    continue;
+                }
+                else
+                {
+                    T->prev->next = T->next;
+                    if (T->next != NULL)
+                    {
+                        T->next->prev = T->prev;
+                        T->next = NULL;
+                    }
+                    T->prev = NULL;
+                    cout << "\n" << T->data << " is replaced by" << str[i] - '0';
+             
+                    delete T;
+                    Node* p = new Node(str[i] - '0');
+                    p->next = top;
+                    top->prev = p;
+                    top = p;
+
+                }
+            }
+            print(top);
+        }
+        return counter+3;
+    }
+    void print(Node* p)
+    {
+        cout << "\nPages that occupied frames";
+        while (p != NULL)
+        {
+            cout << p->data << " ";
+            p = p->next;
+        }
+        cout << endl;
+    }
+};
+int main()
+{
+    Page_Table p1(3);
+    cout<<"\nTotal page faults :"<<p1.count_faults("70120304230321201701");
+    return 0;
+}
