@@ -1,0 +1,100 @@
+import java.util.LinkedList;
+    class Container
+    {
+    	LinkedList<Integer> list = new LinkedList<>();
+            int capacity = 2;
+    	synchronized void produce(int v)
+    	{
+            int value=v;
+    		try 
+    		{
+    		   	 while (list.size() == capacity)
+        		 {
+        		      wait();   
+        		 }
+        		System.out.println(Thread.currentThread().getName()+" produced "+value);
+        		list.add(value);
+        		notify();
+        		Thread.sleep(1000);
+    		}
+    		catch(Exception e) 
+    		{
+                System.out.println(e);
+    		}
+    	}
+    	synchronized void consume()
+    	{
+    		try {
+    		    while (list.size() == 0)
+    		    {
+    		          wait();
+    		    }
+    		    int val=list.removeFirst();
+    		System.out.println(Thread.currentThread().getName()+" consumed "+val);
+        		notify();
+        		Thread.sleep(1000);
+    		} 
+    		catch(Exception e) 
+    		{
+                System.out.println(e);
+    		}
+    	}
+    }
+    class Producer extends Thread
+    {
+    	Thread t;
+    	Container ref;
+    	Producer(Container temp)
+    	{
+    		ref=temp;
+    		t=new Thread(this,"producer");
+    	}
+    	public void run()
+    	{
+    	    int value=0;
+    		while(true)
+    		{
+    		   
+    			ref.produce(value);
+    			value++;
+    		}
+    	}
+    	void startThread()
+    	{
+    		t.start();
+    	}
+    }
+    class Consumer extends Thread
+    {
+    	Container ref;
+    	Thread t;
+    	Consumer(Container temp)
+    	{
+    		ref=temp;
+    		t=new Thread(this,"consumer");
+    	}
+    	public void run()
+    	{
+    		while(true)
+    		{
+    			ref.consume();
+    		}
+    	}
+    	void startThread()
+    	{
+    		t.start();
+    	}
+    }
+    
+    public class Main
+    {
+    	public static void main(String[]args) throws InterruptedException
+    	{
+    		Container ct=new Container();
+    		Consumer c1=new Consumer(ct);
+    		Producer p1=new Producer(ct);
+    		p1.startThread();
+    		c1.startThread();
+    		
+    	}
+    }
