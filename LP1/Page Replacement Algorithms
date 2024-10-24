@@ -1,0 +1,174 @@
+//It contains all Page Replacement Algorithm
+
+#include <iostream>
+#include<vector>
+#include <map>
+using namespace std;
+class PageReplacement
+{
+public:
+    vector<int>pf;
+    vector<int>input;
+    int pfsize;
+    PageReplacement()
+    {
+        cout << "\nEnter no of page Frames:";
+        cin >> pfsize;
+    }
+    void getData()
+    {
+        int size, a;
+        cout << "\nEnter input size:";
+        cin >> size;
+        cout << "\nEnter input page no:";
+        for (int i = 0; i < size; i++)
+        {
+            cin >> a;
+            input.push_back(a);
+        }
+    }
+    bool isHit(int a)
+    {
+        return (find(pf.begin(), pf.end(), a) != pf.end());
+    }
+    void print_pf()
+    {
+        for (int i = 0; i < pf.size(); i++)
+        {
+            cout << pf[i] << " ";
+        }
+        cout << endl;
+    }
+    void FIFO()
+    {
+        int pagefault = 0;
+        for (int i = 0; i < input.size(); i++)
+        {
+            if (!isHit(input[i]))
+            {
+                cout << "\nPage Fault occur for " << input[i] << endl;
+                if (pf.size() != pfsize)
+                {
+                    pf.push_back(input[i]);
+                }
+                else
+                {
+                    pf.erase(pf.begin());
+                    pf.push_back(input[i]);
+                }
+                pagefault++;
+            }
+            else
+            {
+                cout << "\nPage fault doesn't occur\n";
+            }
+            print_pf();
+        }
+        cout << "\nTotal no of pageFaults are:" << pagefault;
+    }
+    void optimal()
+    {
+        //7 0 1 2 0 3 0 4 2 3 0 3 2 3
+        cout << "\npf size" << pf.size();
+        cout << "\ninput size" << input.size();
+        map<int, int>mp;
+        for (int i = 0; i < input.size(); i++)
+        {
+            mp[input[i]] = INT_MAX;
+        }
+        int pagefault = 0;
+        for (int i = 0; i < input.size(); i++)
+        {
+            if (!isHit(input[i]))
+            {
+                cout << "\nPagefault occur for page " << input[i] << endl;
+                if (pf.size() != pfsize)
+                {
+                    pf.push_back(input[i]);
+                }
+                else
+                {
+                    for (int j = i + 1; j < input.size(); j++)
+                    {
+                        mp[input[j]] = j;
+                    }
+                    int ind;
+                    int maxi = INT_MIN;
+                    for (int k = 0; k< pf.size();k++)
+                    {
+                        if (mp[pf[k]] > maxi)
+                        {
+                            maxi =mp[pf[k]];
+                            ind = k;
+                        }
+                    }
+                
+                    cout << "\npage " << input[ind] << "will be replace by :" << input[i];
+                    pf[ind] = input[i];
+                }
+                pagefault++;
+            }
+            else
+            {
+                cout << "\nHit";
+            }
+        }
+        cout << "\nTotal pagefaults:" << pagefault;
+    }
+    void LRU()
+    {
+        //7 0 1 2 0 3 0 4 2 3 0 3 2 3
+        cout << "\npf size" << pf.size();
+        cout << "\ninput size" << input.size();
+        map<int, int>mp;
+        for (int i = 0; i < input.size(); i++)
+        {
+            mp[input[i]] =INT_MAX;
+        }
+        int pagefault = 0;
+        for (int i = 0; i < input.size(); i++)
+        {
+            if (!isHit(input[i]))
+            {
+                cout << "\nPagefault occur for page " << input[i] << endl;
+                if (pf.size() != pfsize)
+                {
+                    pf.push_back(input[i]);
+                }
+                else
+                {
+                    for (int j = 0; j <i; j++)
+                    {
+                        mp[input[j]] = j;
+                    }
+                    int ind;
+                    int min = INT_MAX;
+                    for (int k = 0; k < pf.size(); k++)
+                    {
+                        if (mp[pf[k]] < min)
+                        {
+                            min = mp[pf[k]];
+                            ind = k;
+                        }
+                    }
+
+                    cout << "\npage " << input[ind] << " will be replace by " << input[i];
+                    pf[ind] = input[i];
+                }
+                pagefault++;
+            }
+            else
+            {
+                cout << "\nHit";
+            }
+        }
+        cout << "\nTotal pagefaults:" << pagefault;
+    }
+};
+int main()
+{
+    PageReplacement p1;
+    p1.getData();
+    p1.LRU();
+    return 0;
+}
